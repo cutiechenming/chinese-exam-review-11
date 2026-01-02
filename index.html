@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>九年级语文月考全卷深度讲评</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f8fafc; overflow: hidden; }
+        .serif { font-family: 'Noto Serif SC', serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 动画类 */
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 答案显隐控制 */
+        .blur-reveal {
+            filter: blur(8px);
+            user-select: none;
+            transition: all 0.5s ease;
+            background-color: #f3f4f6;
+            color: transparent;
+            border-radius: 4px;
+        }
+        .blur-reveal.revealed {
+            filter: blur(0);
+            background-color: transparent;
+            color: inherit;
+        }
+
+        /* 重点高亮样式 */
+        .key-point {
+            background-color: #fef08a; /* yellow-200 */
+            color: #854d0e; /* yellow-800 */
+            font-weight: 800;
+            padding: 0 4px;
+            margin: 0 2px;
+            border-radius: 4px;
+            display: inline-block;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* 文言文对译样式 */
+        .translation-row {
+            transition: background-color 0.2s;
+        }
+        .translation-row:hover {
+            background-color: #f0f9ff;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col text-slate-800">
+
+    <main id="app" class="flex-1 relative w-full h-full overflow-hidden flex flex-col items-center justify-center p-4">
+        </main>
+
+    <footer class="h-20 bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] flex items-center justify-between px-6 z-50">
+        <div class="flex items-center gap-4">
+            <span id="page-indicator" class="text-gray-400 font-mono text-lg font-bold min-w-[3rem]"></span>
+            <button onclick="goToTOC()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition text-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                目录
+            </button>
+        </div>
+
+        <div class="absolute left-1/2 transform -translate-x-1/2">
+            <button id="toggle-answer-btn" onclick="toggleAnswer()" class="hidden px-8 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-200 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2">
+                <span>💡 显示解析</span>
+            </button>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button onclick="prevSlide()" class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition disabled:opacity-30">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </button>
+            <button onclick="nextSlide()" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 text-white shadow-md transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+        </div>
+    </footer>
+
+<script>
+    // 工具：高亮处理
+    const highlight = (text) => text.replace(/\{(.*?)\}/g, '<span class="key-point">$1</span>');
+
+    // ================= 数据源：全卷内容 =================
+    const slides = [
+        // 1. 封面
+        {
+            type: "cover",
+            title: "九年级语文月考全卷讲评",
+            subtitle: "阅读与理解训练作业单十一",
+            color: "bg-indigo-600",
+            content: [
+                "题量全覆盖：Q1 - Q18 逐题解析",
+                "重点强化：古诗文逐句对译与深度赏析",
+                "难点突破：《驯马》主题的思维进阶"
+            ]
+        },
+        // 2. 目录
+        {
+            type: "toc",
+            title: "讲评导航",
+            content: [
+                { label: "一、积累与运用 (Q1-4)", slideIndex: 2, color: "text-blue-600" },
+                { label: "二、名著阅读·水浒 (Q5)", slideIndex: 7, color: "text-emerald-600" },
+                { label: "三、古诗文联读 (Q6-11)", slideIndex: 10, color: "text-amber-600" },
+                { label: "四、名著阅读·儒林 (Q12-14)", slideIndex: 19, color: "text-rose-600" },
+                { label: "五、现代文·驯马 (Q15-18)", slideIndex: 23, color: "text-purple-600" }
+            ]
+        },
+        
+        // --- 第一部分：积累与运用 ---
+        { type: "section-title", title: "第一部分", subtitle: "积累与运用 (24分)", color: "bg-blue-600" },
+        
+        // Q1 字音字形
+        {
+            type: "analysis",
+            qType: "基础积累",
+            title: "Q1. 根据拼音写汉字",
+            color: "bg-blue-600",
+            question: "① (péng) 勃发展\n② 目不 (xiá) 接\n③ 往来穿 (suō)\n④ 艺术 (mèi) 力",
+            points: [
+                { title: "答案", content: highlight("① {蓬}勃 (草字头，草木茂盛)\n② 目不{暇}接 (日字旁，与时间有关)\n③ 穿{梭} (木字旁，织布工具)\n④ {魅}力 (鬼字旁，吸引力)"), color: "text-blue-700" }
+            ]
+        },
+        // Q2 词语辨析
+        {
+            type: "question",
+            qType: "词语运用",
+            title: "Q2. 选词填空",
+            color: "bg-blue-600",
+            question: "汴京城里，店铺____；挤进____的人群；宋人____的市井；宋朝的____盛景。\nA. 繁多 繁密 繁闹 繁华   B. 繁密 繁多 繁闹 繁华 ...",
+            options: [
+                { text: "A. 繁多  繁密  繁闹  繁华", isCorrect: true, rationale: highlight("店铺数量多用{繁多}；人群密度大用{繁密}；市井喧哗热闹用{繁闹}；景象兴盛用{繁华}。") },
+                { text: "B/C/D 干扰项", isCorrect: false, rationale: "搭配不当。" }
+            ]
+        },
+        // Q3 语病/标点
+        {
+            type: "question",
+            qType: "综合辨析",
+            title: "Q3. 下列说法有误的一项",
+            color: "bg-blue-600",
+            question: "A. 标点判断  B. 病句修改  C. 短语结构  D. 复句判断",
+            options: [
+                { text: "D. “教育部...跨越山海”是并列复句", isCorrect: true, rationale: highlight("错误。这是{单句}。主语是“平台”，谓语是“设立”，后续是目的状语，并非两个主谓结构的并列。") },
+                { text: "A. 句号、顿号", isCorrect: false, rationale: "正确。" },
+                { text: "B. 成分残缺", isCorrect: false, rationale: "正确。原句缺主语，加上“使”或去掉“让”可修正。" },
+                { text: "C. 结构不同", isCorrect: false, rationale: "正确。主谓/动宾/并列/偏正。" }
+            ]
+        },
+        // Q4 默写
+        {
+            type: "analysis",
+            qType: "古诗文默写",
+            title: "Q4. 补写名句",
+            color: "bg-blue-600",
+            question: "① 万钟则不辩礼义而受之，________！\n② 既加冠，________。\n③ ________，乞人不屑也。\n④ 春蚕到死丝方尽，________。\n⑤ 宋濂相似句：________，________。\n⑥ 孟子表达“人生自古谁无死”相似句：________，________。",
+            points: [
+                { title: "参考答案", content: highlight("① {万钟于我何加焉}\n② {益慕圣贤之道}\n③ {呼尔而与之}\n④ {蜡炬成灰泪始干}\n⑤ {以中有足乐者}，{不知口体之奉不若人也}\n⑥ {二者不可得兼}，{舍生而取义者也}"), color: "text-blue-800" }
+            ]
+        },
+
+        // --- 第二部分：水浒传 ---
+        { type: "section-title", title: "第二部分", subtitle: "名著阅读：《水浒传》", color: "bg-emerald-600" },
+
+        // Q5 (1)(2)
+        {
+            type: "analysis",
+            qType: "人物与情节",
+            title: "Q5(1)(2). 回目与“大闹”",
+            color: "bg-emerald-600",
+            question: "1. 填空：①朱贵水亭施号箭，____雪夜上梁山；②施恩重霸孟州道，____醉打蒋门神。\n2. 探究鲁智深“大闹”的内涵。",
+            points: [
+                { title: "1. 人物填空", content: highlight("① {林冲}   ② {武松}"), color: "text-emerald-700" },
+                { title: "2. 大闹内涵", content: highlight("体现了鲁智深{对不公平现象的反抗}和{对正义的追求}。他性格{豪爽、直率}，看不惯世间丑恶，用行动表达{对正义的坚持}。"), color: "text-emerald-800" }
+            ]
+        },
+        // Q5 (3)
+        {
+            type: "analysis",
+            qType: "主旨探究",
+            title: "Q5(3). 栏目设计",
+            color: "bg-emerald-600",
+            question: "对比林冲、宋江是被逼/被劫上山，鲁智深是主动反抗。拟写一个栏目名称。",
+            points: [
+                { title: "示例答案", content: highlight("品“上梁山”故事，探作品主旨"), color: "text-emerald-700" },
+                { title: "解析", content: "栏目名称需要涵盖“故事回顾”和“主旨思考”两个层面。", color: "text-gray-500" }
+            ]
+        },
+
+        // --- 第三部分：古诗文联读 (深度强化) ---
+        { type: "section-title", title: "第三部分", subtitle: "古诗文联读：刘基 vs 韩拙", color: "bg-amber-600" },
+
+        // 深度赏析：题画山水
+        {
+            type: "poem-appreciation",
+            title: "深度赏析：《题画山水》",
+            subtitle: "[明] 刘基",
+            color: "bg-amber-600",
+            poem: {
+                title: "题画山水",
+                lines: ["澹澹轻烟羃半林，", "涓涓飞瀑泻遥岑。", "偶然坐石观流水，", "不记还山路浅深。"]
+            },
+            analysis: [
+                { label: "画面", text: "淡烟笼罩，瀑布飞泻，诗人独坐石上观水，这是一幅{清幽淡雅}的山水画卷。" },
+                { label: "意象", text: "“轻烟”、“飞瀑”动静结合；“坐石”、“观水”体现亲近自然。" },
+                { label: "情感", text: highlight("“偶然”、“不记”二词是题眼，生动传达了诗人{随性自然}、{超然物外}、{沉醉山水}而忘我的心境。") }
+            ]
+        },
+        // 深度赏析：文言文逐句对译
+        {
+            type: "prose-translation",
+            title: "扫清障碍：文言文逐句对译",
+            subtitle: "《山水纯全集》选段",
+            color: "bg-amber-700",
+            content: [
+                { src: "云出于深谷，纳于嵎夷，掩日，勃然无所拘也。", trans: "云从深谷中生出，收纳于山角之处，遮蔽太阳和天空，蓬勃兴起而无所拘束。" },
+                { src: "升之晴霁，则显四时之气；散之阴晦，则遂其四时之象。", trans: "在晴朗的雾气中升腾，就显现出四季不同的气象；在阴沉的天气中消散，就顺应了四季不同的景象。" },
+                { src: "故春云如白鹤...夏云如奇峰...秋云如轻浪...冬云如泼墨...", trans: "所以春云像白鹤(闲逸)，夏云像奇峰(阴郁)，秋云像轻浪(清明)，冬云像泼墨(昏寒)。" },
+                { src: "凡画者分气候，别云烟为先。", trans: "凡是作画的人，分辨气候、区别云烟是首要的。" },
+                { src: "山水中所用者，霞不重以丹青...恐失其岚光野色自然之气也。", trans: "画山水时，彩霞不用重色，云不施彩绘，恐怕失去了山野景色的自然韵味。" },
+                { src: "善绘于此者...不可逆其岚光而当顺其物理也。", trans: highlight("善于画这些的人，能掌握造化妙理，所以不可违背自然之态，而应当{顺应事物的内在规律}。") }
+            ]
+        },
+        // Q6 基础理解
+        {
+            type: "analysis",
+            qType: "词义与对偶",
+            title: "Q6. 词语与推断",
+            color: "bg-amber-600",
+            question: "1. 对偶：①“掩日”对____；②“遥岑”对____。\n2. 推断：③“阴晦”含义；④“别云烟”含义。",
+            points: [
+                { title: "1. 对偶", content: highlight("① {蔽空} (A)； ② {远树} (B)"), color: "text-amber-700" },
+                { title: "2. 词义推断", content: highlight("③ 阴晦：{昏暗} (联想：晦明变化者)。\n④ 别云烟：{区别/分辨} (联想：分气候)。"), color: "text-amber-700" }
+            ]
+        },
+        // Q7-8 断句与翻译
+        {
+            type: "analysis",
+            qType: "断句翻译",
+            title: "Q7-8. 断句与翻译",
+            color: "bg-amber-600",
+            question: "7. 断句：其有山岚之气烟之轻者云卷而霞舒\n8. 翻译：然云之体，合散不一焉。",
+            points: [
+                { title: "7. 断句", content: highlight("其有山岚之气 / 烟之轻者 / 云卷而霞舒。"), color: "text-amber-700" },
+                { title: "8. 翻译", content: highlight("然而云的形态，聚合消散各不相同。"), color: "text-amber-700" }
+            ]
+        },
+        // Q9-10 内容理解
+        {
+            type: "analysis",
+            qType: "画意理解",
+            title: "Q9-10. 季节与心境",
+            color: "bg-amber-600",
+            question: "9. “轻烟”是哪个季节？\n10. 画中人的动作与心境？",
+            points: [
+                { title: "9. 季节", content: highlight("【秋季】。理由：①材料二写秋云“如轻浪飘零”，形态轻淡；②诗中“澹澹”符合秋云“清明”特征；③“暮半林”的萧疏感契合秋意。"), color: "text-amber-700" },
+                { title: "10. 心境动作", content: highlight("心境：{超然物外}、{沉醉自然}。\n动作：盘坐石上，手抚青苔，凝视飞瀑，闭目倾听，浑然忘我。"), color: "text-amber-700" }
+            ]
+        },
+        // Q11 理论探究
+        {
+            type: "analysis",
+            qType: "画理探究",
+            title: "Q11. 论证“顺其物理”",
+            color: "bg-amber-600",
+            question: "韩拙主张绘画要“顺其物理”，结合诗文论证这一观点。",
+            points: [
+                { title: "答案要点", content: highlight("① 材料二主张画云霞需{顺应四时云烟的不同形态}，不可强加色彩；<br>② 材料一中诗人描写的“澹澹轻烟”正是{自然的本真之景}，暗合“顺应物理”；<br>③ 两者均强调艺术创作应{忠于自然规律}，反对人为扭曲。"), color: "text-amber-800" }
+            ]
+        },
+
+        // --- 第四部分：儒林外史 ---
+        { type: "section-title", title: "第四部分", subtitle: "名著阅读：《儒林外史》", color: "bg-rose-600" },
+        
+        // Q12-14
+        {
+            type: "analysis",
+            qType: "讽刺艺术",
+            title: "Q12-14. 严氏兄弟",
+            color: "bg-rose-600",
+            question: "12. 补写王小二台词\n13. 分析讽刺性\n14. 严氏兄弟矛盾的作用",
+            points: [
+                { title: "12. 补写", content: "“严贡生家的，跑到我家，他说猪跑到人家在寻回来最不利市，让我们出钱买。”", color: "text-rose-700" },
+                { title: "13. 讽刺手法", content: highlight("运用{对比}手法。严贡生标榜自己“从不占便宜”，话未落音就敲诈。{言行相悖}，突出其{虚伪、贪财、残暴}。"), color: "text-rose-700" },
+                { title: "14. 矛盾作用", content: highlight("通过兄弟矛盾（弟弟帮哥哥了事，哥哥却霸占弟弟家产），讽刺严贡生{六亲不认、心狠手辣}；深刻批判{封建科举制度}对人性的异化及{金钱至上}的社会现实。"), color: "text-rose-700" }
+            ]
+        },
+
+        // --- 第五部分：现代文《驯马》 (重点) ---
+        { type: "section-title", title: "第五部分", subtitle: "现代文阅读：《驯马》", color: "bg-purple-600" },
+
+        // 教师引导：认知支架
+        {
+            type: "teacher-guide",
+            title: "《驯马》文本深度解读",
+            subtitle: "读懂故事背后的冲突与和解",
+            color: "bg-purple-600",
+            sections: [
+                { title: "🐎 核心意象：马", content: "马是**传统草原生活**的图腾。驯马的过程，不仅是驯服动物，更是**父辈试图“驯服”子辈**，使其回归传统的隐喻。" },
+                { title: "⚡ 核心冲突", content: "父亲格鲁（坚守传统、不想草原荒废） vs 儿子（向往城市、追求多元生活）。" },
+                { title: "🤝 结局的深意", content: "儿子在牧家乐保留骑术，不是彻底背叛，而是**以新的方式传承**。这是传统与现代的**融合**。" }
+            ]
+        },
+        
+        // Q15 情节梳理
+        {
+            type: "analysis",
+            qType: "情节梳理",
+            title: "Q15. 补全“驯马”表格",
+            color: "bg-purple-600",
+            question: "梳理三次“驯马”经历：（1）对象 （2）方式 （3）结果 （4）象征意义",
+            points: [
+                { title: "(1) 第三次主体", content: highlight("格鲁试图{驯服进城后的儿子}。（试图拉回传统）"), color: "text-purple-700" },
+                { title: "(2) 第二次方式", content: highlight("通过{骂、抽、讨好、讲祖先故事}等多种方式。（软硬兼施）"), color: "text-purple-700" },
+                { title: "(3) 第一次结果", content: highlight("马驹被驯服，变得{温驯听话}。"), color: "text-purple-700" },
+                { title: "(4) 第二次意义", content: highlight("象征{父辈对子辈的管教}。是{文化与传统价值观}的代际传递。"), color: "text-purple-700" }
+            ]
+        },
+        // Q16 语言赏析
+        {
+            type: "analysis",
+            qType: "语言赏析",
+            title: "Q16. 句子赏析",
+            color: "bg-purple-600",
+            question: "(1) “温顺得像一个听话的孩子”\n(2) “骂他，抽他，讨好他...”",
+            points: [
+                { title: "(1) 比喻", content: highlight("运用{比喻}，生动形象写出马驹被驯服的过程，{侧面衬托}出儿子驯马技术的高超。"), color: "text-purple-700" },
+                { title: "(2) 排比/短句", content: highlight("使用一系列动词形成{排比}，短句节奏明快，体现了父亲{爱之深、责之切}的复杂情感。"), color: "text-purple-700" }
+            ]
+        },
+        // Q17 结尾作用
+        {
+            type: "analysis",
+            qType: "结尾探究",
+            title: "Q17. 结尾的作用",
+            color: "bg-purple-600",
+            question: "结尾写格鲁“找不到方向”和回忆“酥油茶”，有何作用？",
+            points: [
+                { title: "结构上", content: highlight("呼应开头儿子进城的情节，使{结构完整}。"), color: "text-purple-700" },
+                { title: "人物上", content: highlight("丰富格鲁形象，展现他经历的单一和{对传统生活的执着}。"), color: "text-purple-700" },
+                { title: "主旨上", content: highlight("暗示{传统与现代生活的巨大差异}，引发人们对社会变迁的思考。"), color: "text-purple-700" }
+            ]
+        },
+        // Q18 主题拓展
+        {
+            type: "analysis",
+            qType: "主题探究",
+            title: "Q18. 传统与现代的碰撞融合",
+            color: "bg-purple-600",
+            question: "文章是如何体现“碰撞与融合”的？（6分）",
+            points: [
+                { title: "思维拓展", content: "思考：牧家乐是不是一种“活态传承”？（不必写在卷子上，供思考）", color: "text-gray-500 italic" },
+                { title: "答案要点", content: highlight("① {碰撞}：格鲁坚守放牧 vs 儿子向往城市；<br>② {冲突}：父亲的期望 vs 儿子的选择；<br>③ {融合}：儿子在牧家乐中融入传统元素（骑术歌舞），既{接纳现代文明}，也{传承传统文化}；<br>④ {共存}：父亲怀念过去，儿子保留联系，两者并在。"), color: "text-purple-800" }
+            ]
+        },
+        
+        // 总结
+        {
+            type: "summary",
+            title: "讲评总结",
+            subtitle: "本卷核心回顾",
+            color: "bg-slate-800",
+            content: [
+                "基础：字音字形不容失，默写理解要精准",
+                "古文：赏析要抓“意象与情感”，翻译要“顺应物理”",
+                "小说：关注“冲突”背后的文化内涵（传统 vs 现代）",
+                "答题：分点作答，关键词高亮，逻辑清晰"
+            ]
+        }
+    ];
+
+    // ================= 渲染逻辑 =================
+    let currentIndex = 0;
+    let showAnswerState = false;
+    const app = document.getElementById('app');
+    const pageIndicator = document.getElementById('page-indicator');
+    const toggleBtn = document.getElementById('toggle-answer-btn');
+
+    function renderSlide(index) {
+        const slide = slides[index];
+        showAnswerState = false;
+        toggleBtn.classList.add('hidden');
+        
+        app.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = "w-full max-w-6xl h-full flex flex-col items-center justify-center fade-in p-4 md:p-6 overflow-y-auto no-scrollbar";
+        
+        let html = '';
+
+        // 封面
+        if (slide.type === 'cover') {
+            html = `
+                <div class="text-center space-y-8">
+                    <div class="inline-block px-6 py-2 rounded-full ${slide.color} bg-opacity-10 text-indigo-700 font-bold tracking-widest uppercase">
+                        ${slide.subtitle}
+                    </div>
+                    <h1 class="text-5xl md:text-7xl font-black text-slate-800 serif leading-tight">${slide.title}</h1>
+                    <div class="w-24 h-2 ${slide.color} mx-auto rounded-full my-6"></div>
+                    <div class="grid gap-4 text-left max-w-2xl mx-auto mt-8">
+                        ${slide.content.map(c => `<div class="flex items-center text-xl text-gray-600 bg-white p-4 rounded-xl shadow-sm border border-gray-100"><span class="text-indigo-500 mr-3 text-2xl">📝</span>${c}</div>`).join('')}
+                    </div>
+                </div>`;
+        }
+        // 目录
+        else if (slide.type === 'toc') {
+            html = `
+                <div class="w-full max-w-4xl">
+                    <h2 class="text-4xl font-bold mb-8 text-center text-slate-800">${slide.title}</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        ${slide.content.map(item => `
+                            <div onclick="goToSlide(${item.slideIndex})" class="cursor-pointer bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-1 transition duration-200 flex items-center justify-between group">
+                                <span class="text-lg font-bold ${item.color}">${item.label}</span>
+                                <span class="text-gray-300 group-hover:text-gray-500 transition">➜</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+        // 分隔页
+        else if (slide.type === 'section-title') {
+            html = `
+                <div class="w-full h-full flex flex-col justify-center items-center ${slide.color} text-white rounded-3xl shadow-xl">
+                    <h2 class="text-5xl font-bold serif mb-6">${slide.title}</h2>
+                    <div class="w-20 h-1 bg-white/50 rounded-full mb-6"></div>
+                    <p class="text-2xl font-light tracking-wide">${slide.subtitle}</p>
+                </div>`;
+        }
+        // 古诗赏析 (New)
+        else if (slide.type === 'poem-appreciation') {
+            html = `
+                <div class="w-full h-full flex flex-col md:flex-row gap-6">
+                    <div class="md:w-1/3 bg-orange-50/50 rounded-2xl p-8 flex flex-col justify-center border border-orange-100 text-center">
+                        <h2 class="text-3xl font-bold text-amber-900 serif mb-2">${slide.poem.title}</h2>
+                        <div class="text-sm font-bold bg-amber-200 text-amber-900 inline-block px-2 py-1 rounded mb-8 mx-auto">古诗鉴赏</div>
+                        ${slide.poem.lines.map(line => `<p class="text-2xl text-slate-800 font-serif leading-loose mb-2">${line}</p>`).join('')}
+                    </div>
+                    <div class="md:w-2/3 flex flex-col justify-center gap-4">
+                        ${slide.analysis.map(item => `
+                            <div class="bg-white p-5 rounded-xl border-l-4 border-amber-500 shadow-sm">
+                                <div class="flex items-center mb-2">
+                                    <span class="text-sm font-bold bg-amber-100 text-amber-800 px-2 py-1 rounded">🔎 ${item.label}</span>
+                                </div>
+                                <div class="text-lg text-gray-700 leading-relaxed answer-content blur-reveal">${highlight(item.text)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            toggleBtn.classList.remove('hidden');
+        }
+        // 文言文翻译 (New)
+        else if (slide.type === 'prose-translation') {
+            html = `
+                <div class="w-full h-full flex flex-col">
+                    <div class="flex justify-between items-end mb-4 border-b pb-2">
+                        <h2 class="text-2xl font-bold text-slate-800">${slide.subtitle} <span class="text-sm font-normal text-gray-500 ml-2">逐句对译</span></h2>
+                    </div>
+                    <div class="flex-1 overflow-y-auto pr-2 space-y-2">
+                        ${slide.content.map(item => `
+                            <div class="translation-row bg-white rounded-lg p-4 border border-gray-100 shadow-sm group">
+                                <p class="text-lg font-serif text-slate-900 mb-2 leading-relaxed tracking-wide">${item.src}</p>
+                                <div class="relative min-h-[1.5rem]">
+                                    <p class="text-base text-indigo-700 font-medium leading-relaxed answer-content blur-reveal bg-indigo-50/50 p-2 rounded">
+                                        <span class="text-xs font-bold text-indigo-400 mr-1 select-none">[译]</span> ${highlight(item.trans)}
+                                    </p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            toggleBtn.classList.remove('hidden');
+        }
+        // 教师引导 (New)
+        else if (slide.type === 'teacher-guide') {
+            html = `
+                <div class="w-full max-w-5xl bg-white rounded-3xl shadow-lg border border-purple-100 p-8 md:p-10">
+                    <div class="flex items-center mb-8 pb-4 border-b border-gray-100">
+                        <span class="text-4xl mr-4">🧠</span>
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-800">${slide.title}</h2>
+                            <p class="text-purple-600 font-medium">${slide.subtitle}</p>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        ${slide.sections.map((sec, i) => `
+                            <div class="bg-slate-50 p-6 rounded-2xl hover:bg-purple-50 transition duration-300">
+                                <h3 class="font-bold text-lg mb-3 text-slate-800 flex items-center">
+                                    <span class="w-6 h-6 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center text-xs mr-2">${i+1}</span>
+                                    ${sec.title}
+                                </h3>
+                                <p class="text-gray-600 text-sm leading-relaxed text-justify">${sec.content.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-purple-700">$1</span>')}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+        // 通用题目 (Question & Analysis)
+        else if (slide.type === 'question' || slide.type === 'analysis') {
+            html = `
+                <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col h-full border border-gray-200">
+                    <div class="p-5 ${slide.color} text-white shrink-0 flex justify-between items-center">
+                        <h2 class="text-xl font-bold truncate pr-4">${slide.title}</h2>
+                        <span class="text-xs font-bold bg-white/20 px-2 py-1 rounded whitespace-nowrap">${slide.qType}</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-6 bg-gray-50">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div class="text-lg text-slate-800 leading-loose font-serif whitespace-pre-wrap">${slide.question}</div>
+                        </div>
+                        <div class="space-y-3">
+                            ${slide.options ? slide.options.map(opt => `
+                                <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                    <div class="p-4 font-medium text-slate-700 border-b border-gray-50">${opt.text}</div>
+                                    <div class="p-4 text-sm bg-green-50 answer-content blur-reveal text-slate-600 leading-relaxed">
+                                        <span class="font-bold text-green-700 block mb-1">解析：</span>
+                                        ${opt.rationale}
+                                    </div>
+                                </div>`).join('') : ''}
+                            ${slide.points ? slide.points.map(point => `
+                                <div class="flex gap-4">
+                                    <div class="w-1 bg-gray-300 rounded shrink-0 mt-2"></div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-slate-700 text-sm mb-1 uppercase tracking-wide opacity-80">${point.title}</h4>
+                                        <div class="text-lg leading-loose answer-content blur-reveal ${point.color}">${point.content}</div>
+                                    </div>
+                                </div>`).join('') : ''}
+                        </div>
+                    </div>
+                </div>`;
+            toggleBtn.classList.remove('hidden');
+        }
+        // 总结页
+        else if (slide.type === 'summary') {
+            html = `
+                <div class="w-full max-w-4xl bg-white p-10 rounded-3xl shadow-2xl border-t-8 border-slate-700">
+                    <h2 class="text-4xl font-black text-slate-800 mb-2">${slide.title}</h2>
+                    <p class="text-gray-500 text-xl mb-10">${slide.subtitle}</p>
+                    <ul class="space-y-4">
+                        ${slide.content.map(item => `<li class="flex items-start"><span class="text-green-500 mr-3 text-xl">✔</span><span class="text-xl text-gray-700 font-medium">${item}</span></li>`).join('')}
+                    </ul>
+                    <button onclick="goToTOC()" class="mt-12 w-full py-4 bg-gray-100 hover:bg-gray-200 text-slate-600 font-bold rounded-xl transition">再次回顾目录</button>
+                </div>`;
+        }
+
+        container.innerHTML = html;
+        app.appendChild(container);
+        pageIndicator.innerText = `${index + 1}/${slides.length}`;
+        
+        // 按钮状态重置
+        const btnText = toggleBtn.querySelector('span');
+        toggleBtn.classList.remove('bg-slate-600', 'hover:bg-slate-700');
+        toggleBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        btnText.innerText = "💡 显示解析";
+    }
+
+    function toggleAnswer() {
+        showAnswerState = !showAnswerState;
+        const contents = document.querySelectorAll('.answer-content');
+        contents.forEach(el => showAnswerState ? el.classList.add('revealed') : el.classList.remove('revealed'));
+        
+        const btnText = toggleBtn.querySelector('span');
+        if (showAnswerState) {
+            toggleBtn.classList.replace('bg-indigo-600', 'bg-slate-600');
+            toggleBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-slate-700');
+            btnText.innerText = "🙈 隐藏解析";
+        } else {
+            toggleBtn.classList.replace('bg-slate-600', 'bg-indigo-600');
+            toggleBtn.classList.replace('hover:bg-slate-700', 'hover:bg-indigo-700');
+            btnText.innerText = "💡 显示解析";
+        }
+    }
+
+    function nextSlide() { if(currentIndex < slides.length - 1) { currentIndex++; renderSlide(currentIndex); } }
+    function prevSlide() { if(currentIndex > 0) { currentIndex--; renderSlide(currentIndex); } }
+    function goToSlide(idx) { currentIndex = idx; renderSlide(currentIndex); }
+    function goToTOC() { goToSlide(1); }
+
+    document.addEventListener('keydown', (e) => {
+        if(e.key === 'ArrowRight' || e.key === 'Space') nextSlide();
+        if(e.key === 'ArrowLeft') prevSlide();
+    });
+
+    renderSlide(0);
+</script>
+</body>
+</html>
